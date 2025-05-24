@@ -18,6 +18,14 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="queue.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="qtype.h" />
+    <ClInclude Include="queue.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -126,14 +134,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\Desktop\운영체제\queue_skeleton\qtype.h" />
-    <ClInclude Include="..\..\..\..\Desktop\운영체제\queue_skeleton\queue.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\..\Desktop\운영체제\queue_skeleton\main.cpp" />
-    <ClCompile Include="..\..\..\..\Desktop\운영체제\queue_skeleton\queue.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\Desktop\운영체제\queue_skeleton\queue.h">
+    <ClCompile Include="queue.cpp">
       <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\운영체제\queue_skeleton\qtype.h">
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
-    </ClInclude>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\Desktop\운영체제\queue_skeleton\main.cpp">
+    <ClInclude Include="qtype.h">
       <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Desktop\운영체제\queue_skeleton\queue.cpp">
+    </ClInclude>
+    <ClInclude Include="queue.h">
       <Filter>소스 파일</Filter>
-    </ClCompile>
+    </ClInclude>
   </ItemGroup>
 </Project>
