@@ -3,7 +3,11 @@
 
 
 Queue* init(void) {
-	return NULL;
+	Queue* queue = (Queue*)malloc(sizeof(Queue));
+	if (queue == NULL) return NULL;
+	queue->head = NULL;
+	queue->tail = NULL;
+	return queue;
 }
 
 
