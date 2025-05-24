@@ -12,6 +12,10 @@ Queue* init(void) {
 
 
 void release(Queue* queue) {
+	// nfree() 먼저 구현 필요
+	// 아래 있음
+
+
 	return;
 }
 
@@ -23,6 +27,9 @@ Node* nalloc(Item item) {
 
 
 void nfree(Node* node) {
+	if (node != NULL) {
+		free(node);
+	}
 	return;
 }
 
