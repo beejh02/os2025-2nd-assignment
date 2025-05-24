@@ -12,11 +12,16 @@ Queue* init(void) {
 
 
 void release(Queue* queue) {
-	// nfree() 먼저 구현 필요
-	// 아래 있음
+	if (queue == NULL) return;
+	Node* current = queue->head;
 
+	while (current != NULL) {
+		Node* temp = current;
+		current = current->next;
+		nfree(temp);
+	}
 
-	return;
+	free(queue);
 }
 
 
