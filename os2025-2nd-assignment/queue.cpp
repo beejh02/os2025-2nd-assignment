@@ -26,8 +26,13 @@ void release(Queue* queue) {
 
 
 Node* nalloc(Item item) {
-	// Node 생성, item으로 초기화
-	return NULL;
+	Node* node = (Node*)malloc(sizeof(Node));
+
+	if (node == NULL) return NULL;
+	node->item = item;
+	node->next = NULL;
+
+	return node;
 }
 
 
