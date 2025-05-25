@@ -45,13 +45,30 @@ void nfree(Node* node) {
 
 
 Node* nclone(Node* node) {
+	// idk
 	return NULL;
 }
 
 
 Reply enqueue(Queue* queue, Item item) {
-	Reply reply = { false, NULL };
-	return reply;
+	Reply reply = { false, { 0, NULL } };
+
+	Node* new_node = nalloc(item);
+
+	reply.success = true;
+	reply.item = item;
+
+	// if first, point to the same thing(head, tail)
+	if (queue->head == NULL) {
+		queue->head = new_node;
+		queue->tail = new_node;
+		return reply;
+	}
+
+	// search, descending order
+	Node* current = queue->head;
+	Node* prev = NULL;
+
 }
 
 Reply dequeue(Queue* queue) {
