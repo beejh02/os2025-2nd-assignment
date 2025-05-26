@@ -69,6 +69,27 @@ Reply enqueue(Queue* queue, Item item) {
 	Node* current = queue->head;
 	Node* prev = NULL;
 
+	while (current != NULL && current->item.key > item.key) {
+		prev = current;
+		current = current->next;
+	}
+
+	if (prev == NULL) {
+		new_node->next = queue->head;
+		queue->head = new_node;
+
+		if (queue->tail == NULL) {
+			queue->tail = new_node;
+		}
+	} else {
+		new_node->next = current;
+		prev->next = new_node;
+		if (current == NULL) {
+			queue->tail = new_node;
+		}
+	}
+
+	return reply;
 }
 
 Reply dequeue(Queue* queue) {
