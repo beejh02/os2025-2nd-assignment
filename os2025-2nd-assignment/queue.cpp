@@ -93,7 +93,20 @@ Reply enqueue(Queue* queue, Item item) {
 }
 
 Reply dequeue(Queue* queue) {
-	Reply reply = { false, NULL };
+	Reply reply = { false, {0, NULL} };
+	if (queue == NULL || queue->head == NULL) return reply;
+
+	Node* temp = queue->head;
+	queue->head = queue->head->next;
+
+	if (queue->head == NULL) {
+		queue->tail = NULL;
+	}
+
+	reply.success = true;
+	reply.item = temp->item;
+	nfree(temp);
+
 	return reply;
 }
 
