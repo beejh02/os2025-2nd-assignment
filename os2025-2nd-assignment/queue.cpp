@@ -111,5 +111,7 @@ Reply dequeue(Queue* queue) {
 }
 
 Queue* range(Queue* queue, Key start, Key end) {
+	// [style]
+	// 포인터를 리턴이라 명시되어있는데 어디로 리턴해야 하는지 모르겠음.
 	return NULL;
 }
