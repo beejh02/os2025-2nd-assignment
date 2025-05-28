@@ -54,8 +54,10 @@ Node* nclone(Node* node) {
 
 Reply enqueue(Queue* queue, Item item) {
 	Reply reply = { false, { 0, NULL } };
+	if (queue == NULL) return reply;
 
 	Node* new_node = nalloc(item);
+	if (new_node == NULL) return reply;
 
 	reply.success = true;
 	reply.item = item;
