@@ -111,7 +111,22 @@ Reply dequeue(Queue* queue) {
 }
 
 Queue* range(Queue* queue, Key start, Key end) {
-	// [style]
-	// 포인터를 리턴이라 명시되어있는데 어디로 리턴해야 하는지 모르겠음.
-	return NULL;
+	
+	// init() -> make a new queue
+	Queue* new_queue = init();
+
+	if (new_queue == NULL || queue == NULL) return new_queue;
+
+	Node* current = queue->head;
+
+	// start <= key && key <= end
+	while (current != NULL) {
+		if (start <= current->item.key  && current->item.key <= end) {
+			Item item = current->item;
+			enqueue(new_queue, item);
+		}
+		current = current->next;
+	}
+
+	return new_queue;
 }
