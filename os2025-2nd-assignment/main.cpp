@@ -4,41 +4,84 @@
 using namespace std;
 
 int main(void) {
-    cout << "testing nclone function" << endl;
+    cout << "test range function" << endl;
 
-    Item test_item = { 123, (void*)12345 };
-    Node* original_node = nalloc(test_item);
-
-    if (original_node == NULL) {
-        cout << "nalloc failed(original node)" << endl;
+    Queue* queue = init();
+    if (queue == NULL) {
+        cout << "queue init erorr" << endl;
         return 1;
     }
 
-    Node* cloned_node = nclone(original_node);
-    if (cloned_node == NULL) {
-        cout << "nclone failed" << endl;
-        nfree(original_node);
+    Item items[] = {
+        { 50, (void*)50 },
+        { 30, (void*)30 },
+        { 70, (void*)70 },
+        { 20, (void*)20 },
+        { 40, (void*)40 }
+    };
+    for (int i = 0; i < 5; i++) {
+        Reply reply = enqueue(queue, items[i]);
+        if (!reply.success) {
+            cout << "Enqueue failed for key " << items[i].key << "!" << endl;
+            release(queue);
+            return 1;
+        }
+    }
+
+    // 30 <= key <= 50 range test
+    Key start = 30;
+    Key end = 50;
+    Queue* result_queue = range(queue, start, end);
+
+    if (result_queue == NULL) {
+        cout << "range function failed to create new queue!" << endl;
+        release(queue);
         return 1;
     }
 
+    // test
     bool test_passed = true;
-    if (cloned_node->item.key != original_node->item.key) {
-        cout << original_node->item.key << ", cloned=" << cloned_node->item.key << endl;
-        test_passed = false;
+    int expected_keys[] = { 50, 40, 30 };
+    int expected_count = 3;
+    int actual_count = 0;
+
+    Node* current = result_queue->head;
+
+    while (current != NULL) {
+        actual_count++;
+        if (actual_count > expected_count || current->item.key != expected_keys[actual_count - 1]) {
+            cout <<  actual_count << ": expected=" << expected_keys[actual_count - 1] << ", value=" << current->item.key << endl;
+            test_passed = false;
+        }
+        if (current->item.value != (void*)(current->item.key)) {
+            cout <<  current->item.key << ": expected=" << current->item.key << ", value=" << (int)current->item.value << endl;
+            test_passed = false;
+        }
+        current = current->next;
     }
-    if (cloned_node->item.value != original_node->item.value) {
-        cout << (int)original_node->item.value << ", cloned=" << (int)cloned_node->item.value << endl;
-        test_passed = false;
-    }
-    if (cloned_node->next != NULL) {
-        cout << "next pointer Null erorr" << endl;
+
+    if (actual_count != expected_count) {
+        cout << expected_count << actual_count << endl;
         test_passed = false;
     }
 
-    cout << (test_passed ? "nclone test good" : "nclone test failed") << endl;
+    // original queue's integrity test
+    int original_count = 0;
+    current = queue->head;
 
-    nfree(original_node);
-    nfree(cloned_node);
+    while (current != NULL) {
+        original_count++;
+        current = current->next;
+    }
+    if (original_count != 5) {
+        cout << original_count << endl;
+        test_passed = false;
+    }
+
+    cout << (test_passed ? "range test good" : "range test failed") << endl;
+
+    release(queue);
+    release(result_queue);
 
     return 0;
 }
