@@ -45,8 +45,10 @@ void nfree(Node* node) {
 
 
 Node* nclone(Node* node) {
-	// idk
-	return NULL;
+	if (node == NULL) return NULL;
+	Node* new_node = nalloc(node->item);
+
+	return new_node;
 }
 
 
