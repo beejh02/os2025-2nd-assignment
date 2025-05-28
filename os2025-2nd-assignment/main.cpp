@@ -52,6 +52,10 @@ int main(void) {
 
     print_queue(queue);
 
+    dequeue(queue);
+
+    print_queue(queue);
+
     // releasing queue
     release(queue);
     cout << "\nqueue released" << endl;
