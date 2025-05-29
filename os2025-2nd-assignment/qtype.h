@@ -1,5 +1,8 @@
 #ifndef _QTYPE_H  // header guard
 #define _QTYPE_H
+#include <mutex>
+#include <condition_variable>
+
 
 // ==========이 파일은 수정 가능==========
 
