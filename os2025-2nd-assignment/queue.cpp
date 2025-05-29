@@ -1,13 +1,11 @@
 #include <iostream>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 #include "queue.h"
 
 
 using namespace std;
-mutex mtx;
-condition_variable cv;
+//mutex mtx;
+//condition_variable cv;
 
 
 Queue* init(void) {
@@ -68,7 +66,7 @@ Reply enqueue(Queue* queue, Item item) {
 	if (new_node == NULL) return reply;
 
 	{
-		lock_guard<mutex> lock(mtx);
+		lock_guard<mutex> lock(queue->mtx);
 		reply.success = true;
 		reply.item = item;
 
