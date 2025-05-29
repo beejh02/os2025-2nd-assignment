@@ -112,7 +112,10 @@ Reply enqueue(Queue* queue, Item item) {
 
 Reply dequeue(Queue* queue) {
 	Reply reply = { false, {0, NULL} };
-	if (queue == NULL || queue->head == NULL) return reply;
+	if (queue == NULL) return reply;
+
+	unique_lock<mutex> lock(mtx);
+	cv.wait(lock, [queue] {return queue->head != NULL; });
 
 	Node* temp = queue->head;
 	queue->head = queue->head->next;
