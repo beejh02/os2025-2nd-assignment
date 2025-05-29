@@ -5,6 +5,11 @@
 #include "queue.h"
 
 
+using namespace std;
+mutex mtx;
+condition_variable cv;
+
+
 Queue* init(void) {
 	Queue* queue = (Queue*)malloc(sizeof(Queue));
 	if (queue == NULL) return NULL;
