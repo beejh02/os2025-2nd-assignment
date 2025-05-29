@@ -67,39 +67,45 @@ Reply enqueue(Queue* queue, Item item) {
 	Node* new_node = nalloc(item);
 	if (new_node == NULL) return reply;
 
-	reply.success = true;
-	reply.item = item;
+	{
+		lock_guard<mutex> lock(mtx);
+		reply.success = true;
+		reply.item = item;
 
-	// if first, point to the same thing(head, tail)
-	if (queue->head == NULL) {
-		queue->head = new_node;
-		queue->tail = new_node;
-		return reply;
-	}
-
-	// search, descending order
-	Node* current = queue->head;
-	Node* prev = NULL;
-
-	while (current != NULL && current->item.key > item.key) {
-		prev = current;
-		current = current->next;
-	}
-
-	if (prev == NULL) {
-		new_node->next = queue->head;
-		queue->head = new_node;
-
-		if (queue->tail == NULL) {
+		// if first, point to the same thing(head, tail)
+		if (queue->head == NULL) {
+			queue->head = new_node;
 			queue->tail = new_node;
+			return reply;
 		}
-	} else {
-		new_node->next = current;
-		prev->next = new_node;
-		if (current == NULL) {
-			queue->tail = new_node;
+
+		// search, descending order
+		Node* current = queue->head;
+		Node* prev = NULL;
+
+		while (current != NULL && current->item.key > item.key) {
+			prev = current;
+			current = current->next;
+		}
+
+		if (prev == NULL) {
+			new_node->next = queue->head;
+			queue->head = new_node;
+
+			if (queue->tail == NULL) {
+				queue->tail = new_node;
+			}
+		}
+		else {
+			new_node->next = current;
+			prev->next = new_node;
+			if (current == NULL) {
+				queue->tail = new_node;
+			}
 		}
 	}
+
+	cv.notify_one();
 
 	return reply;
 }
