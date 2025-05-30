@@ -13,6 +13,10 @@ Queue* init(void) {
 	if (queue == NULL) return NULL;
 	queue->head = NULL;
 	queue->tail = NULL;
+
+	new (&queue->mtx) mutex();
+	new (&queue->cv) condition_variable();
+
 	return queue;
 }
 
