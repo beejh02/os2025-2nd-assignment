@@ -116,8 +116,8 @@ Reply dequeue(Queue* queue) {
 	Reply reply = { false, {0, NULL} };
 	if (queue == NULL) return reply;
 
-	//unique_lock<mutex> lock(mtx);
-	//cv.wait(lock, [queue] {return queue->head != NULL; });
+	unique_lock<mutex> lock(queue->mtx);
+	queue->cv.wait(lock, [queue] { return queue->head != NULL; });
 
 	Node* temp = queue->head;
 	queue->head = queue->head->next;
