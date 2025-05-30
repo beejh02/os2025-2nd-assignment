@@ -122,7 +122,7 @@ Reply dequeue(Queue* queue) {
 	}
 
 	Node* temp = queue->head;
-	temp = queue->head->next;
+	queue->head = queue->head->next;
 
 	if (queue->head == NULL) {
 		queue->tail = NULL;
