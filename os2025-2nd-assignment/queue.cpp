@@ -140,16 +140,18 @@ Queue* range(Queue* queue, Key start, Key end) {
 
 	if (new_queue == NULL || queue == NULL) return new_queue;
 
-	Node* current = queue->head;
+	{
+		lock_guard<mutex> lock(queue->mtx);
+		Node* current = queue->head;
 
-	// start <= key && key <= end
-	while (current != NULL) {
-		if (start <= current->item.key && current->item.key <= end) {
-			Item item = current->item;
-			enqueue(new_queue, item);
+		// start <= key && key <= end
+		while (current != NULL) {
+			if (start <= current->item.key && current->item.key <= end) {
+				Item item = current->item;
+				enqueue(new_queue, item);
+			}
+			current = current->next;
 		}
-		current = current->next;
-
 	}
 	return new_queue;
 }
