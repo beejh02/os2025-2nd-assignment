@@ -148,10 +148,21 @@ Queue* range(Queue* queue, Key start, Key end) {
 		while (current != NULL) {
 			if (start <= current->item.key && current->item.key <= end) {
 				Item item = current->item;
-				enqueue(new_queue, item);
+
+				Node* new_node = nalloc(item);
+				if (new_node == NULL) continue;
+
+				if (new_queue->head == NULL) {
+					new_queue->head = new_node;
+					new_queue->tail = new_node;
+				} else {
+					new_queue->tail->next = new_node;
+					new_queue->tail = new_node;
+				}
 			}
 			current = current->next;
 		}
 	}
+
 	return new_queue;
 }
