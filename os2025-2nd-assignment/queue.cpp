@@ -107,7 +107,7 @@ Reply enqueue(Queue* queue, Item item) {
 		}
 	}
 
-	queue->cv.notify_one;
+	queue->cv.notify_one();
 
 	return reply;
 }
