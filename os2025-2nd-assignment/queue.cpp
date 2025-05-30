@@ -116,8 +116,10 @@ Reply dequeue(Queue* queue) {
 	Reply reply = { false, {0, NULL} };
 	if (queue == NULL) return reply;
 
-	unique_lock<mutex> lock(queue->mtx);
-	queue->cv.wait(lock, [queue] { return queue->head != NULL; });
+	lock_guard<mutex> lock(queue->mtx);
+	if (queue->head == NULL) {
+		return reply;
+	}
 
 	Node* temp = queue->head;
 	queue->head = queue->head->next;
@@ -129,39 +131,32 @@ Reply dequeue(Queue* queue) {
 	reply.success = true;
 	reply.item = temp->item;
 	nfree(temp);
-
 	return reply;
 }
 
 Queue* range(Queue* queue, Key start, Key end) {
-	
+
+	if (queue == NULL) return NULL;
 	// init() -> make a new queue
 	Queue* new_queue = init();
+	if (new_queue == NULL) return NULL;
 
-	if (new_queue == NULL || queue == NULL) return new_queue;
+	lock_guard<mutex> lock(queue->mtx);
+	Node* current = queue->head;
+	while (current != NULL) {
+		if (start <= current->item.key && current->item.key <= end) {
+			Node* clone = nclone(current);
+			clone->next = NULL;
 
-	{
-		lock_guard<mutex> lock(queue->mtx);
-		Node* current = queue->head;
-
-		// start <= key && key <= end
-		while (current != NULL) {
-			if (start <= current->item.key && current->item.key <= end) {
-				Item item = current->item;
-
-				Node* new_node = nalloc(item);
-				if (new_node == NULL) continue;
-
-				if (new_queue->head == NULL) {
-					new_queue->head = new_node;
-					new_queue->tail = new_node;
-				} else {
-					new_queue->tail->next = new_node;
-					new_queue->tail = new_node;
-				}
+			if (new_queue->head == NULL) {
+				new_queue->head = new_queue->tail = clone;
 			}
-			current = current->next;
+			else {
+				new_queue->tail->next = clone;
+				new_queue->tail = clone;
+			}
 		}
+		current = current->next;
 	}
 
 	return new_queue;
