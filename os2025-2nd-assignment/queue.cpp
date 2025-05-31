@@ -15,7 +15,6 @@ Queue* init(void) {
 	queue->tail = NULL;
 
 	new (&queue->mtx) mutex();
-	new (&queue->cv) condition_variable();
 
 	return queue;
 }
@@ -107,7 +106,6 @@ Reply enqueue(Queue* queue, Item item) {
 		}
 	}
 
-	queue->cv.notify_one();
 
 	return reply;
 }
@@ -117,6 +115,7 @@ Reply dequeue(Queue* queue) {
 	if (queue == NULL) return reply;
 
 	lock_guard<mutex> lock(queue->mtx);
+
 	if (queue->head == NULL) {
 		return reply;
 	}
