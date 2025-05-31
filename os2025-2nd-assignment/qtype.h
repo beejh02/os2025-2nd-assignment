@@ -1,7 +1,6 @@
 #ifndef _QTYPE_H  // header guard
 #define _QTYPE_H
 #include <mutex>
-#include <condition_variable>
 
 
 // ==========이 파일은 수정 가능==========
@@ -30,7 +29,6 @@ typedef struct {
     Node* head;
     Node* tail;
     std::mutex mtx;
-    std::condition_variable cv;
     // 필드 추가 가능
 } Queue;
 
