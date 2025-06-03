@@ -49,9 +49,44 @@ Node* nclone(Node* node) {
 
 
 Reply enqueue(Queue* queue, Item item) {
-	Reply reply = { false, NULL };
-	return reply;
+
+    Reply reply;
+    reply.success = false;
+    reply.item = item;
+
+    Node* new_node = nalloc(item);
+
+
+    while (1) {
+        Node* prev = queue->head;
+        Node* curr = prev->next;
+
+        while (curr != nullptr && curr->item.key > item.key) {
+            prev = curr;
+            curr = curr->next;
+        }
+
+        if (curr != nullptr && curr->item.key == item.key) {
+            Node* next = curr->next;
+            new_node->next = next;
+
+            if (prev->next.compare_exchange_weak(curr, new_node)) {
+                nfree(curr);
+                reply.success = true;
+                return reply;
+            }
+        }
+        else {
+            new_node->next = curr;
+            if (prev->next.compare_exchange_weak(curr, new_node)) {
+                reply.success = true;
+                return reply;
+            }
+        }
+    }
 }
+
+
 
 Reply dequeue(Queue* queue) {
 	Reply reply = { false, NULL };
