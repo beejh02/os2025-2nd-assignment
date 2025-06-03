@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="queue.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="queue.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="qtype.h">
+    <ClInclude Include="queue.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
-    <ClInclude Include="queue.h">
+    <ClInclude Include="qtype.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>

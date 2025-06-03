@@ -80,11 +80,7 @@ int main(void) {
 
 	// 일단 한 개 뿐인데, 그래도 multi client라고 가정하기
 	thread client = thread(client_func, queue, requests, REQUEST_PER_CLINET);
-	thread client2 = thread(client_func, queue, requests, REQUEST_PER_CLINET);
-	thread client3 = thread(client_func, queue, requests, REQUEST_PER_CLINET);
 	client.join();
-	client2.join();
-	client3.join();
 
 	release(queue);
 
