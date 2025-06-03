@@ -1,20 +1,17 @@
-// test_queue_with_dequeue.cpp
+// test_queue_range.cpp
 
 #include <iostream>
-#include <thread>
-#include <chrono>
 #include "queue.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 큐 내부를 순회하며 (key:value) 형태로 현재 상태를 출력하는 함수
-// ─────────────────────────────────────────────────────────────────────────────
 void print_queue(Queue* q) {
-    Node* curr = q->head;  // head는 Dummy 노드를 가리킴
+    Node* curr = q->head;  // head는 더미 노드(dummy)를 가리킴
     int idx = 0;
 
-    std::cout << "----- 현재 큐 상태 출력 시작 -----\n";
+    std::cout << "----- 큐 상태 출력 시작 -----\n";
     while (curr != nullptr) {
         if (idx == 0) {
+            // idx == 0일 때는 항상 dummy 노드
             std::cout << "[노드 " << idx << "] (dummy)\n";
         }
         else {
@@ -29,79 +26,61 @@ void print_queue(Queue* q) {
 }
 
 int main() {
-    // 1) 큐 초기화
-    Queue* q = init();
-    if (!q) {
+    // 1) 원본 큐 초기화
+    Queue* orig_q = init();
+    if (!orig_q) {
         std::cerr << "큐 초기화 실패\n";
         return -1;
     }
 
-    // 2) enqueue할 Item 배열 (키:값)
+    // 2) 원본 큐에 enqueue할 Item 배열 (키:값)
     Item test_items[] = {
-        {50, (void*)(long)100},
-        {20, (void*)(long)200},
+        {10, (void*)(long)100},
         {30, (void*)(long)300},
-        {20, (void*)(long)999}, // 키 20 중복 → 기존 노드 교체
-        {40, (void*)(long)400}
+        {20, (void*)(long)200},
+        {40, (void*)(long)400},
+        {25, (void*)(long)250}
     };
     constexpr int N = sizeof(test_items) / sizeof(Item);
 
-    // 3) 아이템을 하나씩 enqueue 하면서, 1초마다 큐 상태 출력
+    // 3) 원본 큐에 순서대로 enqueue
+    std::cout << "*** 원본 큐에 아이템을 enqueue 합니다 ***\n";
     for (int i = 0; i < N; ++i) {
-        Reply r = enqueue(q, test_items[i]);
+        Reply r = enqueue(orig_q, test_items[i]);
         std::cout
             << "[Enqueue] "
             << "key=" << test_items[i].key
             << ", value=" << (long)(test_items[i].value)
             << "  → 성공 여부: " << (r.success ? "true" : "false")
             << "\n";
-
-        // enqueue 직후 큐 전체 출력
-        print_queue(q);
-
-        // 1초 지연
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+    std::cout << "\n";
 
-    // 4) 마지막 enqueue 이후 1초 대기 및 큐 상태 출력
-    std::cout << "모든 enqueue 완료, 1초 후 최종 상태 출력\n";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    print_queue(q);
+    // 4) 원본 큐 전체 상태 출력
+    std::cout << "*** 원본 큐 전체 상태 ***\n";
+    print_queue(orig_q);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 5) Dequeue 테스트: 큐가 비어 있을 때까지 1초마다 dequeue 수행
-    // ─────────────────────────────────────────────────────────────────────────
-    std::cout << "----- 이제 dequeue를 1초 간격으로 수행하며 결과 확인 -----\n";
-    while (true) {
-        // dequeue 호출
-        Reply dr = dequeue(q);
-        if (!dr.success) {
-            // 큐가 비어있으면 반복 종료
-            std::cout << "[Dequeue] 실패: 큐가 비어있습니다.\n";
-            break;
-        }
+    // 5) range 함수 테스트: start=15, end=35 범위 설정
+    Key start = 15;
+    Key end = 35;
+    std::cout
+        << "*** range(orig_q, start=" << start
+        << ", end=" << end << ") 호출 ***\n";
 
-        // 정상적으로 꺼낸 아이템 출력
-        std::cout
-            << "[Dequeue] "
-            << "key=" << dr.item.key
-            << ", value=" << (long)(dr.item.value)
-            << "  → 성공 여부: " << (dr.success ? "true" : "false")
-            << "\n";
+    Queue* ranged_q = range(orig_q, start, end);
 
-        // dequeue 직후 큐 상태 출력
-        print_queue(q);
+    // 6) range 결과 큐 상태 출력
+    std::cout << "\n*** range된 새 큐 상태(키가 "
+        << start << " 이상, " << end << " 이하인 노드만) ***\n";
+    print_queue(ranged_q);
 
-        // 1초 지연
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
+    // 7) 원본 큐(Test 이후에도 아직 남아 있음) 상태 재확인
+    std::cout << "*** 원본 큐가 변경되지 않았는지 재확인 ***\n";
+    print_queue(orig_q);
 
-    // 6) 최종 상태 확인 (완전히 비워졌는지)
-    std::cout << "모든 dequeue 완료, 큐가 비어 있는지 확인 중...\n";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    print_queue(q);
+    // 8) 메모리 해제
+    release(ranged_q);   // range로 생성된 새 큐 해제
+    release(orig_q);     // 원본 큐 해제
 
-    // 7) 메모리 해제
-    release(q);
     return 0;
 }
