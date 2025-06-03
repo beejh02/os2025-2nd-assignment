@@ -86,7 +86,7 @@ Reply enqueue(Queue* queue, Item item) {
 Reply dequeue(Queue* queue) {
     Reply reply = { false, { 0, NULL } };
 
-    while (true) {
+    while (1) {
         Node* prev = queue->head;
         Node* first = prev->next;
 
@@ -106,5 +106,17 @@ Reply dequeue(Queue* queue) {
 
 
 Queue* range(Queue* queue, Key start, Key end) {
-	return NULL;
+    Queue* new_q = init();
+
+    Node* curr = queue->head.load()->next.load();
+
+    while (curr != NULL) {
+        Key k = curr->item.key;
+        if (k >= start && k <= end) {
+            enqueue(new_q, curr->item);
+        }
+        curr = curr->next;
+    }
+
+    return new_q;
 }
