@@ -15,9 +15,14 @@ Queue* init(void) {
 }
 
 void release(Queue* queue) {
-	return;
+	Node* curr = queue->head;
+	while (curr != nullptr) {
+		Node* next = curr->next;
+		delete curr;
+		curr = next;
+	}
+	delete queue;
 }
-
 
 Node* nalloc(Item item) {
 	// Node 생성, item으로 초기화
