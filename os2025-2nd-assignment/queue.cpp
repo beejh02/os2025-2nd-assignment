@@ -38,7 +38,13 @@ void nfree(Node* node) {
 
 
 Node* nclone(Node* node) {
-	return NULL;
+	if (!node) return NULL;
+
+	Node* clone = new Node;
+	clone->item = node->item;
+	clone->next = nullptr;
+
+	return clone;
 }
 
 
