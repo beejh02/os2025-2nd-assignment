@@ -33,7 +33,7 @@ Node* nalloc(Item item) {
 
 
 void nfree(Node* node) {
-	return;
+	delete node;
 }
 
 
