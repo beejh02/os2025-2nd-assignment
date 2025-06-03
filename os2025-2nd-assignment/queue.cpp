@@ -8,9 +8,9 @@ Queue* init(void) {
 
 	dummy->item.key = 0;
 	dummy->item.value = NULL;
-	dummy->next = (NULL);
+	dummy->next = NULL;
 
-	q->head = (dummy);
+	q->head = dummy;
 	return q;
 }
 
@@ -25,8 +25,10 @@ void release(Queue* queue) {
 }
 
 Node* nalloc(Item item) {
-	// Node 생성, item으로 초기화
-	return NULL;
+	Node* node = new Node;
+	node->item = item;
+	node->next = NULL;
+	return node;
 }
 
 
