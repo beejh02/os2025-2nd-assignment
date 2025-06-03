@@ -3,9 +3,16 @@
 
 
 Queue* init(void) {
-	return NULL;
-}
+	Queue* q = new Queue;
+	Node* dummy = new Node;
 
+	dummy->item.key = 0;
+	dummy->item.value = NULL;
+	dummy->next = (NULL);
+
+	q->head = (dummy);
+	return q;
+}
 
 void release(Queue* queue) {
 	return;
