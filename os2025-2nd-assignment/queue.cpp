@@ -1,162 +1,172 @@
 #include <iostream>
-#include <thread>
 #include "queue.h"
 
-
 using namespace std;
-//mutex mtx;
-//condition_variable cv;
+
+static inline int parentIndex(int i) {
+    return (i - 1) / 2;
+}
+
+static inline int leftChild(int i) {
+    return 2 * i + 1;
+}
+
+static inline int rightChild(int i) {
+    return 2 * i + 2;
+}
+
+static inline void swapItem(Item* a, Item* b) {
+    Item tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+
+static void heapifyUp(Item* data, int idx) {
+    while (idx > 0) {
+        int p = parentIndex(idx);
+        if (data[p].key < data[idx].key) {
+            swapItem(&data[p], &data[idx]);
+            idx = p;
+        }
+        else {
+            break;
+        }
+    }
+}
+
+
+static void heapifyDown(Item* data, int sz, int idx) {
+    while (true) {
+        int left = leftChild(idx);
+        int right = rightChild(idx);
+        int largest = idx;
+
+        if (left < sz && data[left].key > data[largest].key) {
+            largest = left;
+        }
+
+        if (right < sz && data[right].key > data[largest].key) {
+            largest = right;
+        }
+        if (largest != idx) {
+            swapItem(&data[idx], &data[largest]);
+            idx = largest;
+        }
+        else {
+            break;
+        }
+    }
+}
 
 
 Queue* init(void) {
-	Queue* queue = (Queue*)malloc(sizeof(Queue));
-	if (queue == NULL) return NULL;
-	queue->head = NULL;
-	queue->tail = NULL;
+    Queue* queue = new Queue;
+    if (queue == NULL) return NULL;
 
-	new (&queue->mtx) mutex();
-
-	return queue;
+    queue->size = 0;
+    return queue;
 }
 
 
 void release(Queue* queue) {
-	if (queue == NULL) return;
-	Node* current = queue->head;
-
-	while (current != NULL) {
-		Node* temp = current;
-		current = current->next;
-		nfree(temp);
-	}
-
-	free(queue);
-}
-
-
-Node* nalloc(Item item) {
-	Node* node = (Node*)malloc(sizeof(Node));
-
-	if (node == NULL) return NULL;
-	node->item = item;
-	node->next = NULL;
-
-	return node;
-}
-
-
-void nfree(Node* node) {
-	if (node != NULL) {
-		free(node);
-	}
-	return;
-}
-
-
-Node* nclone(Node* node) {
-	if (node == NULL) return NULL;
-	Node* new_node = nalloc(node->item);
-
-	return new_node;
+    if (queue == NULL) return;
+    delete queue;
 }
 
 
 Reply enqueue(Queue* queue, Item item) {
-	Reply reply = { false, { 0, NULL } };
-	if (queue == NULL) return reply;
+    Reply reply = { false, { 0, NULL } };
+    if (queue == NULL) return reply;
 
-	Node* new_node = nalloc(item);
-	if (new_node == NULL) return reply;
+    {
+        lock_guard<mutex> lock(queue->mtx);
 
-	{
-		lock_guard<mutex> lock(queue->mtx);
+        if (queue->size >= MAX_CAPACITY) {
+            return reply;
+        }
 
-		reply.success = true;
-		reply.item = item;
+        int idx = queue->size;
+        queue->data[idx] = item;
+        queue->size += 1;
 
-		// if first, point to the same thing(head, tail)
-		if (queue->head == NULL) {
-			queue->head = new_node;
-			queue->tail = new_node;
-			return reply;
-		}
+        heapifyUp(queue->data, idx);
 
-		// search, descending order
-		Node* current = queue->head;
-		Node* prev = NULL;
-		while (current != NULL && current->item.key > item.key) {
-			prev = current;
-			current = current->next;
-		}
-
-		if (prev == NULL) {
-			new_node->next = queue->head;
-			queue->head = new_node;
-
-			if (queue->tail == NULL) {
-				queue->tail = new_node;
-			}
-		}
-		else {
-			new_node->next = current;
-			prev->next = new_node;
-			if (current == NULL) {
-				queue->tail = new_node;
-			}
-		}
-	}
-
-
-	return reply;
+        reply.success = true;
+        reply.item = item;
+    }
+    return reply;
 }
+
 
 Reply dequeue(Queue* queue) {
-	Reply reply = { false, {0, NULL} };
-	if (queue == NULL) return reply;
+    Reply reply = { false, { 0, NULL } };
+    if (queue == NULL) return reply;
 
-	lock_guard<mutex> lock(queue->mtx);
+    lock_guard<std::mutex> lock(queue->mtx);
 
-	if (queue->head == NULL) {
-		return reply;
-	}
+    if (queue->size <= 0) {
+        return reply;
+    }
 
-	Node* temp = queue->head;
-	queue->head = queue->head->next;
+    Item topItem = queue->data[0];
 
-	if (queue->head == NULL) {
-		queue->tail = NULL;
-	}
+    queue->data[0] = queue->data[queue->size - 1];
+    queue->size -= 1;
 
-	reply.success = true;
-	reply.item = temp->item;
-	nfree(temp);
-	return reply;
+    if (queue->size > 0) {
+        heapifyDown(queue->data, queue->size, 0);
+    }
+
+    reply.success = true;
+    reply.item = topItem;
+    return reply;
 }
 
+
+Node* nalloc(Item item) {
+    return NULL;
+}
+
+
+void nfree(Node* node) {
+    (void)node;
+}
+
+
+Node* nclone(Node* node) {
+    (void)node;
+    return NULL;
+}
+
+
 Queue* range(Queue* queue, Key start, Key end) {
+    if (queue == NULL) return NULL;
 
-	if (queue == NULL) return NULL;
-	// init() -> make a new queue
-	Queue* new_queue = init();
-	if (new_queue == NULL) return NULL;
+    Queue* new_queue = init();
+    if (new_queue == NULL) return NULL;
 
-	lock_guard<mutex> lock(queue->mtx);
-	Node* current = queue->head;
-	while (current != NULL) {
-		if (start <= current->item.key && current->item.key <= end) {
-			Node* clone = nclone(current);
-			clone->next = NULL;
+    {
+        std::lock_guard<std::mutex> lock(queue->mtx);
+        for (int i = 0; i < queue->size; ++i) {
+            Item it = queue->data[i];
+            if (start <= it.key && it.key <= end) {
+                Item deepcopy;
+                deepcopy.key = it.key;
+                deepcopy.value_size = it.value_size;
 
-			if (new_queue->head == NULL) {
-				new_queue->head = new_queue->tail = clone;
-			}
-			else {
-				new_queue->tail->next = clone;
-				new_queue->tail = clone;
-			}
-		}
-		current = current->next;
-	}
+                deepcopy.value = malloc(it.value_size);
+                if (deepcopy.value != NULL) {
+                    memcpy(deepcopy.value, it.value, it.value_size);
+                }
+                else {
+                    deepcopy.value = NULL;
+                }
 
-	return new_queue;
+                enqueue(new_queue, deepcopy);
+            }
+        }
+    }
+
+    return new_queue;
 }
