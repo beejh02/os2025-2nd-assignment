@@ -1,7 +1,10 @@
 #ifndef _QTYPE_H  // header guard
 #define _QTYPE_H
+#include <atomic>
 
 // ==========이 파일은 수정 가능==========
+
+using namespace std;
 
 typedef unsigned int Key;  // 값이 클수록 높은 우선순위
 typedef void* Value;
@@ -19,13 +22,12 @@ typedef struct {
 
 typedef struct node_t {
     Item item;
-    struct node_t* next;
+    atomic<node_t*> next;
     // 필드 추가 가능
 } Node;
 
 typedef struct {
-    Node* head, tail;
-    // 필드 추가 가능
+    atomic<Node*> head;
 } Queue;
 
 // 이후 자유롭게 추가/수정: 새로운 자료형 정의 등
