@@ -16,7 +16,7 @@ Queue* init(void) {
 
 void release(Queue* queue) {
 	Node* curr = queue->head;
-	while (curr != nullptr) {
+	while (curr != NULL) {
 		Node* next = curr->next;
 		delete curr;
 		curr = next;
@@ -42,7 +42,7 @@ Node* nclone(Node* node) {
 
 	Node* clone = new Node;
 	clone->item = node->item;
-	clone->next = nullptr;
+	clone->next = NULL;
 
 	return clone;
 }
@@ -50,23 +50,19 @@ Node* nclone(Node* node) {
 
 Reply enqueue(Queue* queue, Item item) {
 
-    Reply reply;
-    reply.success = false;
-    reply.item = item;
-
+    Reply reply = { false, { 0, NULL } };
     Node* new_node = nalloc(item);
-
 
     while (1) {
         Node* prev = queue->head;
         Node* curr = prev->next;
 
-        while (curr != nullptr && curr->item.key > item.key) {
+        while (curr != NULL && curr->item.key > item.key) {
             prev = curr;
             curr = curr->next;
         }
 
-        if (curr != nullptr && curr->item.key == item.key) {
+        if (curr != NULL && curr->item.key == item.key) {
             Node* next = curr->next;
             new_node->next = next;
 
@@ -87,11 +83,27 @@ Reply enqueue(Queue* queue, Item item) {
 }
 
 
-
 Reply dequeue(Queue* queue) {
-	Reply reply = { false, NULL };
-	return reply;
+    Reply reply = { false, { 0, NULL } };
+
+    while (true) {
+        Node* prev = queue->head;
+        Node* first = prev->next;
+
+        if (first == NULL) {
+            return reply;
+        }
+
+        Node* next = first->next;
+        if (prev->next.compare_exchange_weak(first, next)) {
+            reply.success = true;
+            reply.item = first->item;
+            nfree(first);
+            return reply;
+        }
+    }
 }
+
 
 Queue* range(Queue* queue, Key start, Key end) {
 	return NULL;
