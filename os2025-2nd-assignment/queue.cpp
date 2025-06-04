@@ -122,7 +122,33 @@ Reply enqueue(Queue* queue, Item item) {
     return reply;
 }
 
+Reply enqueue_nonatomic(Queue* queue, Item item) {
+    Reply reply = { false, {0, NULL} };
+    if (queue == NULL) return reply;
 
+    Node* new_node = nalloc(item);
+    if (new_node == NULL) return reply;
+
+    Node* update[MAX_LEVEL];
+    Node* current = queue->head;
+
+    for (int i = MAX_LEVEL - 1; i >= 0; i--) {
+        while (current->next[i] != NULL && current->next[i]->item.key > item.key) {
+            current = current->next[i];
+        }
+        update[i] = current;
+    }
+
+    for (int i = 0; i < new_node->level; i++) {
+        new_node->next[i] = update[i]->next[i];
+        update[i]->next[i] = new_node;
+    }
+
+    reply.success = true;
+    reply.item = item;
+
+    return reply;
+}
 
 Reply dequeue(Queue* queue) {
     Reply reply = { false, {0, NULL} };
@@ -162,33 +188,27 @@ Queue* range(Queue* queue, Key start, Key end) {
     Queue* result = init();
     if (result == NULL) return NULL;
 
-    Node* update[MAX_LEVEL];
     Node* current = queue->head;
-
     for (int i = MAX_LEVEL - 1; i >= 0; i--) {
         while (current->next[i] != NULL && current->next[i]->item.key > end) {
             current = current->next[i];
         }
-        update[i] = current;
     }
 
     current = current->next[0];
-    Node* last[MAX_LEVEL];
-    for (int i = 0; i < MAX_LEVEL; i++) {
-        last[i] = result->head;
-    }
-
     while (current != NULL && end >= current->item.key && current->item.key >= start) {
         Node* cloned = nclone(current);
         if (cloned == NULL) {
             release(result);
             return NULL;
         }
-
-        for (int i = 0; i < cloned->level; i++) {
-            last[i]->next[i] = cloned;
-            last[i] = cloned;
+        Reply reply = enqueue_nonatomic(result, cloned->item);
+        if (!reply.success) {
+            nfree(cloned);
+            release(result);
+            return NULL;
         }
+        nfree(cloned);
         current = current->next[0];
     }
 
