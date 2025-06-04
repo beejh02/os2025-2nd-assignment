@@ -19,13 +19,13 @@ typedef struct {
 
 typedef struct node_t {
     Item item;
-    struct node_t* next;
+    int level;
+    struct node_t** next;
     // 필드 추가 가능
 } Node;
 
 typedef struct {
-    Node* head, tail;
-    // 필드 추가 가능
+    Node* head;
 } Queue;
 
 // 이후 자유롭게 추가/수정: 새로운 자료형 정의 등
