@@ -1,5 +1,9 @@
 #ifndef _QTYPE_H  // header guard
 #define _QTYPE_H
+#define MAX_LEVEL 16
+#define P_FACTOR 0.5f
+
+using namespace std;
 
 // ==========이 파일은 수정 가능==========
 
@@ -21,7 +25,7 @@ typedef struct {
 typedef struct node_t {
     Item item;
     int level;
-    struct node_t** next;
+    node_t** next;
     // 필드 추가 가능
 } Node;
 
