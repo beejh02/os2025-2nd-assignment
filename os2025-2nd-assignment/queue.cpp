@@ -97,7 +97,7 @@ void nfree(Node* node) {
 		free(node->item.value);
 	}
 
-	delete[] node->next;
+	free(node->next);
 	delete node;
 }
 
