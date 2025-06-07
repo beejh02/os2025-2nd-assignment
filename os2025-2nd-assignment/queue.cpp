@@ -139,6 +139,23 @@ Reply enqueue(Queue* queue, Item item) {
 		update[i] = x;
 	}
 
+	Node* next0 = update[0]->next[0];
+	if (next0 && next0->item.key == item.key) {
+		free(next0->item.value);
+		next0->item.value = nullptr;
+		next0->item.value_size = 0;
+
+		if (item.value && item.value_size > 0) {
+			next0->item.value = malloc(item.value_size);
+			if (next0->item.value) {
+				memcpy(next0->item.value, item.value, item.value_size);
+				next0->item.value_size = item.value_size;
+				reply.success = true;
+			}
+		}
+		return reply;
+	}
+
 	Node* node = nalloc(item);
 	if (!node) return reply;
 
