@@ -1,93 +1,95 @@
 ﻿#include <iostream>
-#include <string>
-#include <cstring>
-#include "queue.h"    // init, enqueue, release 선언 :contentReference[oaicite:0]{index=0}
-#include "qtype.h"    // Queue, Node, Item 정의 :contentReference[oaicite:1]{index=1}
+#include <thread>
+#include <mutex>
+#include <random>
+#include <chrono>
+#include "queue.h"     // init, enqueue, dequeue, release 선언
+#include "qtype.h"     // Queue, Node, Item 정의
 
 using namespace std;
 
-// 바닥 레벨(0)을 순회하며 (key,value) 형식으로 출력.
-// value_size가 sizeof(int)이면 정수로, 아니면 문자열로 처리.
+// cout 동기화를 위한 mutex
+mutex print_mtx;
+
+// 바닥 레벨(0)을 순회하며 (key,value) 형식으로 출력
 void printQueue(Queue* q) {
+    lock_guard<mutex> lock(q->mtx);
+    lock_guard<mutex> cout_lock(print_mtx);
     cout << "current queue : ";
     Node* cur = q->head->next[0];
     bool first = true;
     while (cur) {
         if (!first) cout << ", ";
         first = false;
-
-        // 정수형 value
-        if (cur->item.value && cur->item.value_size == sizeof(int)) {
-            int ival;
-            memcpy(&ival, cur->item.value, sizeof(int));
-            cout << "(" << cur->item.key << "," << ival << ")";
-        }
-        // 문자열형 value
-        else if (cur->item.value) {
-            cout << "("
-                << cur->item.key
-                << ":\""
-                << static_cast<char*>(cur->item.value)
-                << "\")";
-        }
-        // 값이 없을 경우
-        else {
-            cout << "(" << cur->item.key << ",)";
-        }
-
+        int ival;
+        memcpy(&ival, cur->item.value, sizeof(int));
+        cout << "(" << cur->item.key << "," << ival << ")";
         cur = cur->next[0];
     }
-    if (first)               // 한 번도 출력된 적 없으면
-        cout << "<empty>";
+    if (first) cout << "<empty>";
     cout << "\n";
+}
+
+// 삽입 전용 워커: 30번 랜덤 key/value 삽입 (1~1000)
+void inserter(Queue* q) {
+    mt19937 gen(random_device{}());
+    uniform_int_distribution<int> dist(1, 1000);
+    for (int i = 0; i < 30; ++i) {
+        int key = dist(gen), val = dist(gen);
+        Item it{ key, malloc(sizeof(int)), sizeof(int) };
+        memcpy(it.value, &val, sizeof(int));
+        Reply r = enqueue(q, it);
+        {
+            lock_guard<mutex> cout_lock(print_mtx);
+            cout << "enqueue 수행 : key=" << key
+                << "; value=" << val
+                << "; success=" << boolalpha << r.success << ";\n";
+        }
+        printQueue(q);
+        free(it.value);
+        this_thread::sleep_for(chrono::milliseconds(20));
+    }
+}
+
+// 삭제 전용 워커: 시작 전에 잠시 대기 후 30번 dequeue 시도
+void remover(Queue* q) {
+    this_thread::sleep_for(chrono::milliseconds(200));
+    for (int i = 0; i < 30; ++i) {
+        Reply r = dequeue(q);
+        {
+            lock_guard<mutex> cout_lock(print_mtx);
+            if (r.success) {
+                int val;
+                memcpy(&val, r.item.value, sizeof(int));
+                cout << "dequeue 수행 : key=" << r.item.key
+                    << "; value=" << val
+                    << "; success=" << boolalpha << r.success << ";\n";
+                free(r.item.value);
+            }
+            else {
+                cout << "dequeue 수행 : success=" << boolalpha << r.success << ";\n";
+            }
+        }
+        printQueue(q);
+        this_thread::sleep_for(chrono::milliseconds(30));
+    }
 }
 
 int main() {
     Queue* q = init();
 
-    // 예시로 4가지 아이템(enqueue)을 추가
-    struct {
-        int key;
-        bool isInt;
-        const char* str;
-        int intval;
-    } tests[] = {
-        { 100, false, "hello", 0 },
-        {  70, true,  nullptr, 30 },
-        {  20, true,  nullptr,  5 },
-        {  70, true,  nullptr, 5000 }  // 같은 key=70에 대해 값을 5000으로 교체
-    };
+    // 람다 캡처를 사용해 overload error 회피
+    thread t1([q]() { inserter(q); });
+    thread t2([q]() { remover(q); });
 
-    for (auto& t : tests) {
-        Item it;
-        it.key = t.key;
-        if (t.isInt) {
-            // 정수형 value 메모리 할당
-            it.value_size = sizeof(int);
-            it.value = malloc(it.value_size);
-            memcpy(it.value, &t.intval, sizeof(int));
-        }
-        else {
-            // 문자열형 value 포인터(널 터미널 포함)
-            it.value_size = static_cast<int>(strlen(t.str)) + 1;
-            it.value = malloc(it.value_size);
-            memcpy(it.value, t.str, it.value_size);
-        }
+    t1.join();
+    t2.join();
 
-        Reply r = enqueue(q, it);
-        // 출력 형식 맞추기
-        cout << "enqueue 수행 : "
-            << "key=" << it.key << "; "
-            << "value=";
-        if (t.isInt) cout << t.intval;
-        else         cout << "\"" << static_cast<char*>(it.value) << "\"";
-        cout << "; success=" << boolalpha << r.success << ";\n";
-
-        printQueue(q);
-
-        // 임시로 할당한 value 메모리 해제
-        free(it.value);
+    {
+        lock_guard<mutex> cout_lock(print_mtx);
+        cout << "\n== Final queue state ==\n";
     }
+    printQueue(q);
 
     release(q);
     return 0;
