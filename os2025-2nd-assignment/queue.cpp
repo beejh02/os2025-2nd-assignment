@@ -190,17 +190,20 @@ Reply dequeue(Queue* queue) {
 Queue* range(Queue* queue, Key start, Key end) {
 	if (!queue) return nullptr;
 
+	Key low = (start < end ? start : end);
+	Key high = (start < end ? end : start);
+
 	lock_guard<mutex> lock(queue->mtx);
 
 	Queue* newQ = init();
 	if (!newQ) return nullptr;
 
 	Node* cur = queue->head->next[0];
-	while (cur && cur->item.key > end) {
+	while (cur && cur->item.key > high) {
 		cur = cur->next[0];
 	}
 
-	for (; cur && cur->item.key >= start; cur = cur->next[0]) {
+	for (; cur && low <= cur->item.key; cur = cur->next[0]) {
 		Node* clone = nclone(cur);
 
 		Node* update[MAX_LEVEL];
