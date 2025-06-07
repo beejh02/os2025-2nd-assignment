@@ -169,12 +169,12 @@ Reply enqueue(Queue* queue, Item item) {
 }
 
 Reply dequeue(Queue* queue) {
-	if (!queue)		return { false, { 0, nullptr, 0 } };
+	if (!queue) return { false, { 0, nullptr, 0 } };
 
 	lock_guard<mutex> lock(queue->mtx);
 
 	Node* target = queue->head->next[0];
-	if (!target)	return { false, { 0, nullptr, 0 } };
+	if (!target)   return { false, { 0, nullptr, 0 } };
 
 	for (int i = 0; i < target->level; ++i) {
 		if (queue->head->next[i] == target) {
@@ -182,9 +182,14 @@ Reply dequeue(Queue* queue) {
 		}
 	}
 
-	Reply reply{ true, target->item };
+	Item out = target->item;
+
+	target->item.value = nullptr;
+	target->item.value_size = 0;
+
 	nfree(target);
-	return reply;
+
+	return { true, out };
 }
 
 Queue* range(Queue* queue, Key start, Key end) {
