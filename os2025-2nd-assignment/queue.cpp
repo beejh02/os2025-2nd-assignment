@@ -125,22 +125,23 @@ Node* nclone(Node* orig) {
 }
 
 Reply enqueue(Queue* queue, Item item) {
-	Reply reply = { false, item };
+	Reply reply{ false, item };
 	if (!queue) return reply;
+
+	lock_guard<mutex> lock(queue->mtx);
 
 	Node* update[MAX_LEVEL];
 	Node* x = queue->head;
-	// 삽입 위치 찾기
 	for (int i = MAX_LEVEL - 1; i >= 0; --i) {
 		while (x->next[i] && x->next[i]->item.key > item.key) {
 			x = x->next[i];
 		}
 		update[i] = x;
 	}
-	// 새 노드 생성
+
 	Node* node = nalloc(item);
 	if (!node) return reply;
-	// 포인터 연결
+
 	for (int i = 0; i < node->level; ++i) {
 		node->next[i] = update[i]->next[i];
 		update[i]->next[i] = node;
@@ -151,39 +152,40 @@ Reply enqueue(Queue* queue, Item item) {
 }
 
 Reply dequeue(Queue* queue) {
-	Reply reply = { false, {0, nullptr, 0} };
-	if (!queue) return reply;
+	if (!queue)		return { false, { 0, nullptr, 0 } };
+
+	lock_guard<mutex> lock(queue->mtx);
 
 	Node* target = queue->head->next[0];
-	if (!target) {
-		// 비어 있음
-		return reply;
-	}
-	// 레벨별로 헤드와 연결된 경우 건너뛰기
+	if (!target)	return { false, { 0, nullptr, 0 } };
+
 	for (int i = 0; i < target->level; ++i) {
 		if (queue->head->next[i] == target) {
 			queue->head->next[i] = target->next[i];
 		}
 	}
-	// 결과 준비
-	reply.success = true;
-	reply.item = target->item;
+
+	Reply reply{ true, target->item };
 	nfree(target);
 	return reply;
 }
 
 Queue* range(Queue* queue, Key start, Key end) {
 	if (!queue) return nullptr;
+
+	lock_guard<mutex> lock(queue->mtx);
+
 	Queue* newQ = init();
 	if (!newQ) return nullptr;
-	Node* cur = queue->head->next[0];
 
+	Node* cur = queue->head->next[0];
 	while (cur && cur->item.key > end) {
 		cur = cur->next[0];
 	}
 
 	for (; cur && cur->item.key >= start; cur = cur->next[0]) {
 		Node* clone = nclone(cur);
+
 		Node* update[MAX_LEVEL];
 		Node* x = newQ->head;
 		for (int i = MAX_LEVEL - 1; i >= 0; --i) {
@@ -192,11 +194,12 @@ Queue* range(Queue* queue, Key start, Key end) {
 			}
 			update[i] = x;
 		}
-		// clone 연결
+
 		for (int i = 0; i < clone->level; ++i) {
 			clone->next[i] = update[i]->next[i];
 			update[i]->next[i] = clone;
 		}
 	}
+
 	return newQ;
 }

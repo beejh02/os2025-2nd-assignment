@@ -2,6 +2,7 @@
 #define _QTYPE_H
 #define MAX_LEVEL 16
 #define P_FACTOR 0.5f
+#include <mutex>
 
 using namespace std;
 
@@ -31,6 +32,7 @@ typedef struct node_t {
 
 typedef struct {
     Node* head;
+    mutex mtx;
 } Queue;
 
 // 이후 자유롭게 추가/수정: 새로운 자료형 정의 등
