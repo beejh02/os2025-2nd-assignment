@@ -13,7 +13,8 @@ using namespace std;
 
 Queue* q;
 mutex print_mtx;
-atomic<int> enqueue_count{ 0 };  // enqueue count 조정용
+atomic<int> enqueue_count{ 0 };  // enqueue 성공 카운터
+atomic<int> dequeue_count{ 0 };  // dequeue 성공 카운터
 
 void print_item(const Item& item) {
     cout << "(" << item.key << ", ";
@@ -39,7 +40,7 @@ void print_queue() {
 
 void enqueue_thread() {
     unordered_set<Key> seen;
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < 80; ++i) {
         int key = rand() % 1234;
         bool is_duplicate = !seen.insert(key).second;
 
@@ -52,7 +53,7 @@ void enqueue_thread() {
         Item item = { (Key)key, val_ptr, sz };
         Reply rep = enqueue(q, item);
 
-        // 신규 삽입일 때만 카운트 증가
+        // 신규 키에 대해서만 카운트 증가
         if (rep.success && !is_duplicate) {
             ++enqueue_count;
         }
@@ -75,6 +76,9 @@ void dequeue_thread() {
         this_thread::sleep_for(chrono::milliseconds(80));
 
         Reply rep = dequeue(q);
+        if (rep.success) {
+            ++dequeue_count;
+        }
 
         {
             lock_guard<mutex> lock(print_mtx);
@@ -97,17 +101,18 @@ int main() {
     q = init();
 
     thread t1(enqueue_thread);
+    thread t2(dequeue_thread);
     t1.join();
+    t2.join();
 
-    // enqueue 횟수와 실제 노드 수 비교
+    // enqueue/dequeue 횟수와 현재 노드 수 비교
     int node_count = 0;
-    Node* node = q->head->next[0];
-    while (node) {
+    for (Node* node = q->head->next[0]; node; node = node->next[0]) {
         ++node_count;
-        node = node->next[0];
     }
-    cout << "[Check] enqueue adjusted: " << enqueue_count.load()
-        << ", current node count: " << node_count << "\n";
+    cout << "[Check] enqueue: " << enqueue_count.load()
+        << ", dequeue: " << dequeue_count.load()
+        << ", remaining nodes: " << node_count << "\n";
 
     release(q);
     return 0;
