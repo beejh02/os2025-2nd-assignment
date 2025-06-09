@@ -1,102 +1,113 @@
 ﻿#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <string>
 #include <thread>
-#include <mutex>
-#include <random>
 #include <chrono>
-#include <sstream>
-#include "queue.h"     // init, enqueue, dequeue, release 선언
-#include "qtype.h"     // Queue, Node, Item 정의
+#include <mutex>
+#include <atomic>
+#include <unordered_set>
+#include "queue.h"
 
 using namespace std;
 
-// 모든 큐 연산과 로그를 원자적으로 묶기 위한 mutex
-mutex op_mtx;
+Queue* q;
+mutex print_mtx;
+atomic<int> enqueue_count{ 0 };  // enqueue count 조정용
 
-// 큐 스냅샷 문자열 생성 (바닥 레벨 탐색, q->mtx 보호)
-string snapshotQueue(Queue* q) {
-    ostringstream oss;
-    lock_guard<mutex> lock(q->mtx);
-    oss << "current queue : ";
-    Node* cur = q->head->next[0];
-    bool first = true;
-    while (cur) {
-        if (!first) oss << ", ";
-        first = false;
-        int v;
-        memcpy(&v, cur->item.value, sizeof(int));
-        oss << "(" << cur->item.key << "," << v << ")";
-        cur = cur->next[0];
+void print_item(const Item& item) {
+    cout << "(" << item.key << ", ";
+    if (item.value && item.value_size > 0) {
+        cout.write(static_cast<char*>(item.value), item.value_size);
     }
-    if (first) oss << "<empty>";
-    return oss.str();
+    else {
+        cout << "null";
+    }
+    cout << ")";
 }
 
-// 삽입 전용 워커: 30번 랜덤 key/value 삽입 (1~1000)
-void inserter(Queue* q) {
-    mt19937 gen(random_device{}());
-    uniform_int_distribution<int> dist(1, 1000);
-    for (int i = 0; i < 30; ++i) {
-        int key = dist(gen);
-        int val = dist(gen);
-        Item it{ key, malloc(sizeof(int)), sizeof(int) };
-        memcpy(it.value, &val, sizeof(int));
+void print_queue() {
+    Node* node = q->head->next[0];
+    cout << "curQueue : ";
+    while (node) {
+        print_item(node->item);
+        if (node->next[0]) cout << ", ";
+        node = node->next[0];
+    }
+    cout << "\n";
+}
 
-        // 연산과 로그를 한 번에 묶어 순서 보장
-        {
-            lock_guard<mutex> lock(op_mtx);
-            Reply r = enqueue(q, it);
-            cout << "enqueue 수행 : key=" << key
-                << "; value=" << val
-                << "; success=" << boolalpha << r.success << "\n";
-            cout << snapshotQueue(q) << "\n";
+void enqueue_thread() {
+    unordered_set<Key> seen;
+    for (int i = 0; i < 10000; ++i) {
+        int key = rand() % 1234;
+        bool is_duplicate = !seen.insert(key).second;
+
+        string value = "val" + to_string(i);
+        int sz = (int)value.size();
+        char* val_ptr = (char*)malloc(sz + 1);
+        memcpy(val_ptr, value.c_str(), sz);
+        val_ptr[sz] = '\0';
+
+        Item item = { (Key)key, val_ptr, sz };
+        Reply rep = enqueue(q, item);
+
+        // 신규 삽입일 때만 카운트 증가
+        if (rep.success && !is_duplicate) {
+            ++enqueue_count;
         }
 
-        free(it.value);
-        this_thread::sleep_for(chrono::milliseconds(20));
+        {
+            lock_guard<mutex> lock(print_mtx);
+            cout << "[Thread 1] enqueue : ";
+            print_item(item);
+            cout << (rep.success ? " (ok)" : " (failed)") << "\n";
+            print_queue();
+        }
+
+        free(val_ptr);
+        this_thread::sleep_for(chrono::milliseconds(50));
     }
 }
 
-// 삭제 전용 워커: 시작 전에 잠시 대기 후 30번 dequeue 시도
-void remover(Queue* q) {
-    this_thread::sleep_for(chrono::milliseconds(200));
-    for (int i = 0; i < 30; ++i) {
-        // 연산과 로그를 한 번에 묶어 순서 보장
+void dequeue_thread() {
+    for (int i = 0; i < 80; ++i) {
+        this_thread::sleep_for(chrono::milliseconds(80));
+
+        Reply rep = dequeue(q);
+
         {
-            lock_guard<mutex> lock(op_mtx);
-            Reply r = dequeue(q);
-            if (r.success) {
-                int val;
-                memcpy(&val, r.item.value, sizeof(int));
-                cout << "dequeue 수행 : key=" << r.item.key
-                    << "; value=" << val
-                    << "; success=" << boolalpha << r.success << "\n";
+            lock_guard<mutex> lock(print_mtx);
+            cout << "[Thread 2] dequeue : ";
+            if (rep.success) {
+                print_item(rep.item);
+                free(rep.item.value);
             }
             else {
-                cout << "dequeue 수행 : success=" << boolalpha << r.success << "\n";
+                cout << "(failed)";
             }
-            cout << snapshotQueue(q) << "\n";
-            if (r.success) free(r.item.value);
+            cout << "\n";
+            print_queue();
         }
-
-        this_thread::sleep_for(chrono::milliseconds(30));
     }
 }
 
 int main() {
-    Queue* q = init();
+    srand((unsigned)time(nullptr));
+    q = init();
 
-    thread t1([q]() { inserter(q); });
-    thread t2([q]() { remover(q); });
-
+    thread t1(enqueue_thread);
     t1.join();
-    t2.join();
 
-    // 최종 상태도 원자적으로 출력
-    {
-        lock_guard<mutex> lock(op_mtx);
-        cout << "\n== Final queue state ==\n";
-        cout << snapshotQueue(q) << "\n";
+    // enqueue 횟수와 실제 노드 수 비교
+    int node_count = 0;
+    Node* node = q->head->next[0];
+    while (node) {
+        ++node_count;
+        node = node->next[0];
     }
+    cout << "[Check] enqueue adjusted: " << enqueue_count.load()
+        << ", current node count: " << node_count << "\n";
 
     release(q);
     return 0;
