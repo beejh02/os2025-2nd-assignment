@@ -177,9 +177,7 @@ Reply dequeue(Queue* queue) {
 	if (!target)   return { false, { 0, nullptr, 0 } };
 
 	for (int i = 0; i < target->level; ++i) {
-		if (queue->head->next[i] == target) {
-			queue->head->next[i] = target->next[i];
-		}
+		queue->head->next[i] = target->next[i];
 	}
 
 	Item out = target->item;
